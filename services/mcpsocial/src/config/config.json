@@ -1,0 +1,19 @@
+{
+  "linkedin": {
+    "apiKey": "YOUR_LINKEDIN_API_KEY",
+    "apiSecret": "YOUR_LINKEDIN_API_SECRET"
+  },
+  "facebook": {
+    "appId": "YOUR_FACEBOOK_APP_ID",
+    "appSecret": "YOUR_FACEBOOK_APP_SECRET",
+    "accessToken": "YOUR_FACEBOOK_ACCESS_TOKEN"
+  },
+  "instagram": {
+    "appId": "YOUR_INSTAGRAM_APP_ID",
+    "appSecret": "YOUR_INSTAGRAM_APP_SECRET",
+    "accessToken": "YOUR_INSTAGRAM_ACCESS_TOKEN"
+  },
+  "openai": {
+    "apiKey": "YOUR_OPENAI_API_KEY"
+  }
+}

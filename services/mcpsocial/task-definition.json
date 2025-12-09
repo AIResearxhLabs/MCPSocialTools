@@ -1,0 +1,51 @@
+{
+  "family": "mcpsocial-task",
+  "executionRoleArn": "arn:aws:iam::753353727891:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::753353727891:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "mcpsocial-container",
+      "image": "753353727891.dkr.ecr.us-east-2.amazonaws.com/mcpsocial:latest",
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "hostPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "3001"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "value": "PLACEHOLDER_OPENAI_API_KEY"
+        },
+        {
+          "name": "FACEBOOK_ACCESS_TOKEN",
+          "value": "PLACEHOLDER_FACEBOOK_ACCESS_TOKEN"
+        },
+        {
+          "name": "INSTAGRAM_ACCESS_TOKEN",
+          "value": "PLACEHOLDER_INSTAGRAM_ACCESS_TOKEN"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mcpsocial-task",
+          "awslogs-region": "us-east-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "256",
+  "memory": "512"
+}

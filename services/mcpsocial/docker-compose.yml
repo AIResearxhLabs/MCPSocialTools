@@ -1,0 +1,38 @@
+services:
+  mcpsocial:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcpsocial-server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      - LOG_LEVEL=INFO
+      # Optional: Override config.json values with environment variables if needed
+      - LINKEDIN_API_KEY=${LINKEDIN_API_KEY:-}
+      - LINKEDIN_API_SECRET=${LINKEDIN_API_SECRET:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FACEBOOK_APP_ID=${FACEBOOK_APP_ID:-}
+      - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET:-}
+      - FACEBOOK_ACCESS_TOKEN=${FACEBOOK_ACCESS_TOKEN:-}
+      - INSTAGRAM_APP_ID=${INSTAGRAM_APP_ID:-}
+      - INSTAGRAM_APP_SECRET=${INSTAGRAM_APP_SECRET:-}
+      - INSTAGRAM_ACCESS_TOKEN=${INSTAGRAM_ACCESS_TOKEN:-}
+    volumes:
+      # Mount for hot reload during development (optional)
+      - ./build:/usr/src/app/build:ro
+    restart: unless-stopped
+    networks:
+      - mcpsocial-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/mcp/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  mcpsocial-network:
+    driver: bridge

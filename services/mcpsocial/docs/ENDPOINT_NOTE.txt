@@ -1,0 +1,16 @@
+NOTE FOR ALL DOCUMENTATION:
+===========================
+The server endpoint changes with each ECS deployment.
+
+To get current endpoint:
+  Run: ../get-endpoint.sh
+
+In documentation, use:
+  ${MCPSOCIAL_ENDPOINT} as placeholder
+  or refer to SERVER_ENDPOINT.md
+
+Last known endpoint: http://3.141.18.225:3001
+Last updated: 2025-11-17 14:48 UTC
+
+For production use, implement ALB with stable DNS.
+See SERVER_ENDPOINT.md for recommendations.

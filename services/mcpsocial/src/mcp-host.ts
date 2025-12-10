@@ -6,6 +6,7 @@ import { linkedinConfig } from './config';
 import { logger } from './utils/logger';
 import crypto from 'crypto';
 import qs from 'qs';
+import axios from 'axios';
 
 /**
  * Defines the structure for a tool that can be exposed by the MCP Host.
@@ -116,16 +117,18 @@ export class McpSocialHost {
             '1. Direct the user to open the authorizationUrl in their browser',
             '2. User will authenticate and authorize the application',
             '3. LinkedIn will redirect to the callbackUrl with a "code" parameter',
-            '4. Use the "code" with the exchangeLinkedInAuthCode tool to get an access token',
+            '4. Extract the "code" from the callback URL query parameters',
+            '5. Use the exchangeLinkedInAuthCode tool with the code to receive an access_token',
+            '6. Use the returned access_token with other LinkedIn tools to post, read, and interact with LinkedIn',
           ],
         };
       },
     };
 
-    // Tool: Exchange authorization code for access token (informational)
+    // Tool: Exchange authorization code for access token
     const exchangeLinkedInAuthCodeTool: McpTool = {
       name: 'exchangeLinkedInAuthCode',
-      description: 'Provides instructions for exchanging a LinkedIn authorization code for an access token. Note: The actual token exchange must be done server-side for security. This tool returns the required information and endpoint details.',
+      description: 'Exchanges a LinkedIn authorization code for an access token. This tool performs the server-side token exchange and returns the access_token that can be used with other LinkedIn tools (postToLinkedIn, listLinkedInPosts, etc.) to interact with LinkedIn APIs on behalf of the authenticated user.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -141,26 +144,81 @@ export class McpSocialHost {
         required: ['code', 'callbackUrl'],
       },
       execute: async (params: { code: string; callbackUrl: string }) => {
-        return {
-          message: 'Token exchange must be performed server-side for security',
-          endpoint: 'POST https://www.linkedin.com/oauth/v2/accessToken',
-          requiredParameters: {
-            grant_type: 'authorization_code',
-            code: params.code,
-            redirect_uri: params.callbackUrl,
-            client_id: linkedinConfig.apiKey,
-            client_secret: '(server-side only)',
-          },
-          instructions: [
-            'This token exchange should be handled by your backend server',
-            'The client_secret must never be exposed to the client',
-            'The redirect_uri must match exactly what was used in the authorization request',
-            'After exchange, you will receive an access_token',
-            'Use the access_token with other LinkedIn tools (postToLinkedIn, listLinkedInPosts, etc.)',
-          ],
-          callbackEndpoint: `${params.callbackUrl}?code=${params.code}`,
-          note: 'The callback URL endpoint on your server should handle the token exchange and then redirect or return the access token securely',
-        };
+        const getTimer = logger.startTimer();
+        
+        try {
+          logger.info('LinkedIn Token Exchange Started', undefined, { 
+            code: params.code.substring(0, 10) + '...', 
+            callbackUrl: params.callbackUrl 
+          });
+          
+          const tokenResponse = await axios.post(
+            'https://www.linkedin.com/oauth/v2/accessToken',
+            qs.stringify({
+              grant_type: 'authorization_code',
+              code: params.code,
+              redirect_uri: params.callbackUrl,
+              client_id: linkedinConfig.apiKey,
+              client_secret: linkedinConfig.apiSecret,
+            }),
+            {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+            }
+          );
+
+          const { access_token, expires_in, refresh_token, refresh_token_expires_in, scope } = tokenResponse.data;
+          const duration = getTimer();
+          
+          logger.info('LinkedIn Token Exchange Successful', { duration }, { 
+            expiresIn: expires_in, 
+            hasRefreshToken: !!refresh_token,
+            scope
+          });
+
+          return {
+            success: true,
+            message: 'Successfully authenticated with LinkedIn! You can now use the access_token with other LinkedIn tools.',
+            accessToken: access_token,
+            expiresIn: expires_in,
+            refreshToken: refresh_token,
+            refreshTokenExpiresIn: refresh_token_expires_in,
+            scope: scope,
+            usage: [
+              'Use this accessToken with tools like:',
+              '- postToLinkedIn: Create posts on LinkedIn',
+              '- listLinkedInPosts: View your recent posts',
+              '- getLinkedInPostLikes: Get engagement metrics',
+              '- commentOnLinkedInPost: Engage with content',
+              '- shareLinkedInArticle: Share articles with your network',
+              '- listLinkedInConnections: View your connections',
+            ],
+          };
+        } catch (error) {
+          const duration = getTimer();
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+          
+          logger.error('LinkedIn Token Exchange Failed', { duration }, { 
+            error: errorMsg,
+            code: params.code.substring(0, 10) + '...',
+            callbackUrl: params.callbackUrl
+          });
+          
+          // Provide helpful error messages
+          if (axios.isAxiosError(error) && error.response) {
+            const statusCode = error.response.status;
+            const errorData = error.response.data;
+            
+            if (statusCode === 400) {
+              throw new Error(`LinkedIn OAuth Error: ${errorData.error_description || 'Invalid authorization code or callback URL mismatch. Ensure the callback URL matches exactly what was used in the authorization request.'}`);
+            } else if (statusCode === 401) {
+              throw new Error('LinkedIn OAuth Error: Invalid client credentials. Check your LinkedIn API key and secret in the configuration.');
+            }
+          }
+          
+          throw new Error(`Failed to exchange authorization code for access token: ${errorMsg}`);
+        }
       },
     };
 

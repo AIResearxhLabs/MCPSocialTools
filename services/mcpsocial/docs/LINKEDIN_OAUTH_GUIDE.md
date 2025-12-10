@@ -71,9 +71,7 @@ curl -X POST http://localhost:3001/mcp/v1 \
 
 ### Step 3: Exchange Authorization Code for Access Token
 
-**Important:** This step **must be performed server-side** to keep your client secret secure.
-
-Use the `exchangeLinkedInAuthCode` tool to get the token exchange information.
+Use the `exchangeLinkedInAuthCode` tool to exchange the authorization code for an access token. This tool **performs the actual server-side token exchange** and returns the access token directly.
 
 **Tool Parameters:**
 - `code` (required): The authorization code from the callback
@@ -100,56 +98,31 @@ curl -X POST http://localhost:3001/mcp/v1 \
 **Response:**
 ```json
 {
-  "message": "Token exchange must be performed server-side for security",
-  "endpoint": "POST https://www.linkedin.com/oauth/v2/accessToken",
-  "requiredParameters": {
-    "grant_type": "authorization_code",
-    "code": "AUTHORIZATION_CODE",
-    "redirect_uri": "http://localhost:8000/api/integrations/linkedin/callback",
-    "client_id": "YOUR_CLIENT_ID",
-    "client_secret": "(server-side only)"
-  },
-  "instructions": [
-    "This token exchange should be handled by your backend server",
-    "The client_secret must never be exposed to the client",
-    "The redirect_uri must match exactly what was used in the authorization request",
-    "After exchange, you will receive an access_token",
-    "Use the access_token with other LinkedIn tools"
+  "success": true,
+  "message": "Successfully authenticated with LinkedIn! You can now use the access_token with other LinkedIn tools.",
+  "accessToken": "AQX...(your access token)...xyz",
+  "expiresIn": 5184000,
+  "refreshToken": "AQW...(your refresh token)...abc",
+  "refreshTokenExpiresIn": 31536000,
+  "scope": "openid profile w_member_social",
+  "usage": [
+    "Use this accessToken with tools like:",
+    "- postToLinkedIn: Create posts on LinkedIn",
+    "- listLinkedInPosts: View your recent posts",
+    "- getLinkedInPostLikes: Get engagement metrics",
+    "- commentOnLinkedInPost: Engage with content",
+    "- shareLinkedInArticle: Share articles with your network",
+    "- listLinkedInConnections: View your connections"
   ]
 }
 ```
 
-### Step 4: Server-Side Token Exchange
-
-Your server at `http://localhost:8000/api/integrations/linkedin/callback` should:
-
-1. Receive the authorization code from LinkedIn's redirect
-2. Verify the `state` parameter matches what was generated
-3. Make a POST request to LinkedIn's token endpoint:
-
-```bash
-curl -X POST https://www.linkedin.com/oauth/v2/accessToken \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=authorization_code" \
-  -d "code=AUTHORIZATION_CODE" \
-  -d "redirect_uri=http://localhost:8000/api/integrations/linkedin/callback" \
-  -d "client_id=YOUR_CLIENT_ID" \
-  -d "client_secret=YOUR_CLIENT_SECRET"
-```
-
-**LinkedIn Response:**
-```json
-{
-  "access_token": "ACCESS_TOKEN_HERE",
-  "expires_in": 5184000,
-  "refresh_token": "REFRESH_TOKEN_HERE",
-  "refresh_token_expires_in": 31536000,
-  "scope": "openid profile w_member_social"
-}
-```
-
-4. Store the `access_token` securely
-5. Return or redirect with the token to your client application
+**Important Notes:**
+- The MCP server performs the token exchange **server-side** using the client secret securely
+- The `accessToken` is returned directly and can be used immediately with other LinkedIn tools
+- Store the `accessToken` and `refreshToken` securely in your application
+- The access token expires after 60 days (5,184,000 seconds)
+- Use the refresh token to obtain a new access token before expiration
 
 ---
 
@@ -260,7 +233,7 @@ You can use different callback URLs for different environments:
 ```
 ┌─────────────┐         ┌──────────────┐         ┌──────────────┐
 │   Client    │         │ MCP Server   │         │   LinkedIn   │
-│ (Browser)   │         │ (Port 3001)  │         │   OAuth API  │
+│Application  │         │ (Port 3001)  │         │   OAuth API  │
 └──────┬──────┘         └──────┬───────┘         └──────┬───────┘
        │                       │                        │
        │ 1. getLinkedInAuthUrl │                        │
@@ -269,29 +242,31 @@ You can use different callback URLs for different environments:
        │ 2. authorizationUrl   │                        │
        │<──────────────────────┤                        │
        │                       │                        │
-       │ 3. Open URL in browser│                        │
+       │ 3. Direct user to URL │                        │
+       │    (opens in browser) │                        │
        ├───────────────────────┼───────────────────────>│
        │                       │                        │
        │ 4. User authorizes    │                        │
        │<───────────────────────┼────────────────────────┤
        │                       │                        │
        │ 5. Redirect with code │                        │
-       │    (to localhost:8000)│                        │
+       │    (to callback URL)  │                        │
        │<──────────────────────┼────────────────────────┤
        │                       │                        │
-       
-┌──────┴──────┐               │                        │
-│Your Backend │               │                        │
-│(Port 8000)  │               │                        │
-└──────┬──────┘               │                        │
+       │ 6. exchangeLinkedInAuthCode (with code)        │
+       ├──────────────────────>│                        │
        │                       │                        │
-       │ 6. Exchange code for token                     │
-       ├────────────────────────────────────────────────>│
+       │                       │ 7. Token exchange      │
+       │                       ├───────────────────────>│
        │                       │                        │
-       │ 7. Access token       │                        │
-       │<────────────────────────────────────────────────┤
+       │                       │ 8. Access token        │
+       │                       │<───────────────────────┤
        │                       │                        │
-       │ 8. Return token to client                      │
+       │ 9. accessToken + info │                        │
+       │<──────────────────────┤                        │
+       │                       │                        │
+       │ 10. Use accessToken with other LinkedIn tools  │
+       │     (postToLinkedIn, listLinkedInPosts, etc.)  │
        ├──────────────────────>│                        │
        │                       │                        │
 ```
@@ -300,12 +275,15 @@ You can use different callback URLs for different environments:
 
 ## Summary
 
-The MCPSocial LinkedIn OAuth tools now provide **flexible callback URL configuration**, allowing you to integrate with any client application architecture. The key changes:
+The MCPSocial LinkedIn OAuth tools provide a **complete, end-to-end OAuth flow** with flexible callback URL configuration:
 
-- ✅ `callbackUrl` is now a **required parameter** for `getLinkedInAuthUrl`
-- ✅ `callbackUrl` is now a **required parameter** for `exchangeLinkedInAuthCode`
-- ✅ No more hardcoded callback URLs
+- ✅ `callbackUrl` is a **required parameter** for `getLinkedInAuthUrl`
+- ✅ `callbackUrl` is a **required parameter** for `exchangeLinkedInAuthCode`
+- ✅ **Server-side token exchange** is performed automatically by the MCP server
+- ✅ **Returns the access_token directly** - ready to use with other LinkedIn tools
+- ✅ No need for separate backend implementation - the MCP server handles OAuth securely
 - ✅ Works with any registered LinkedIn App redirect URI
 - ✅ Supports multiple environments (dev, staging, prod)
+- ✅ Client is fully equipped to communicate with LinkedIn after successful authentication
 
 For additional help, refer to the [LinkedIn OAuth Documentation](https://learn.microsoft.com/en-us/linkedin/shared/authentication/authentication).

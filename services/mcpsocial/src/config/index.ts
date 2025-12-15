@@ -24,3 +24,8 @@ export const instagramConfig = {
 export const openaiConfig = {
   apiKey: process.env.OPENAI_API_KEY || config.openai.apiKey,
 };
+
+export const twitterConfig = {
+  clientId: process.env.TWITTER_CLIENT_ID || config.twitter.clientId,
+  clientSecret: process.env.TWITTER_CLIENT_SECRET || config.twitter.clientSecret,
+};

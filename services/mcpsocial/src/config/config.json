@@ -15,5 +15,9 @@
   },
   "openai": {
     "apiKey": "YOUR_OPENAI_API_KEY"
+  },
+  "twitter": {
+    "clientId": "YOUR_TWITTER_CLIENT_ID",
+    "clientSecret": "YOUR_TWITTER_CLIENT_SECRET"
   }
 }

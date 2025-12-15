@@ -1,3 +1,7 @@
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response } from 'express';
 import apiRoutes from './api/routes';
 import { errorHandler } from './api/middleware/error-handler';

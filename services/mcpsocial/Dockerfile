@@ -13,6 +13,9 @@ COPY . .
 # Build the TypeScript code
 RUN npm run build
 
+# Copy .env file for environment variables (if it exists)
+COPY .env* ./
+
 # Stage 2: Create the production image
 FROM --platform=linux/amd64 node:18-alpine
 
@@ -32,6 +35,9 @@ RUN npm ci --only=production
 
 # Copy the compiled code from the builder stage
 COPY --from=builder --chown=appuser:appgroup /usr/src/app/build ./build
+
+# Copy .env file from builder stage (if it exists)
+COPY --from=builder --chown=appuser:appgroup /usr/src/app/.env ./
 
 # Expose the port the app runs on
 EXPOSE 3001

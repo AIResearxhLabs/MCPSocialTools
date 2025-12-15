@@ -6,12 +6,13 @@ Complete reference for all tools and resources exposed by the MCPSocial MCP serv
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| **Authentication** | 2 tools | LinkedIn OAuth 2.0 flow |
+| **Authentication** | 8 tools | LinkedIn, Twitter, Facebook, Instagram OAuth 2.0 flows |
 | **LinkedIn** | 7 tools + 1 resource | Posts, likes, comments, sharing, connections, profile |
-| **Facebook** | 1 tool + 1 resource | Posts and page info |
-| **Instagram** | 1 tool + 1 resource | Posts and profile |
+| **Twitter** | 9 tools + 1 resource | Tweets, replies, likes, retweets, search, engagement, profile |
+| **Facebook** | 11 tools + 1 resource | Posts, photos, likes, comments, links, pages, friends |
+| **Instagram** | 10 tools + 1 resource | Posts, photos, comments, insights, followers, profile |
 | **AI (OpenAI)** | 2 tools | Caption generation and scheduling suggestions |
-| **Total** | **13 tools + 3 resources** | |
+| **Total** | **47 tools + 5 resources** | |
 
 ---
 
@@ -218,15 +219,188 @@ curl -X POST http://localhost:3001/mcp/execute \
 
 ---
 
-## 📘 Facebook Tools
+## 🔐 Twitter Authentication Tools
 
-### 10. postToFacebook
+### 10. getTwitterAuthUrl
 
-**Purpose:** Create a new post on Facebook
+**Purpose:** Generate OAuth 2.0 with PKCE authorization URL for Twitter authentication
 
 **Input Schema:**
 ```json
 {
+  "callbackUrl": "string (required) - OAuth redirect URI",
+  "state": "string (optional) - CSRF protection token"
+}
+```
+
+### 11. exchangeTwitterAuthCode
+
+**Purpose:** Exchange Twitter authorization code for access token using PKCE
+
+**Input Schema:**
+```json
+{
+  "code": "string (required) - Authorization code from callback",
+  "codeVerifier": "string (required) - PKCE code verifier",
+  "callbackUrl": "string (required) - Same callback URL used in authorization"
+}
+```
+
+---
+
+## 🐦 Twitter Tools
+
+### 12. postToTwitter
+
+**Purpose:** Create a new tweet on Twitter/X (max 280 characters)
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "content": "string (required) - Tweet text (max 280 characters)"
+}
+```
+
+### 13. replyToTweet
+
+**Purpose:** Reply to an existing tweet
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "tweetId": "string (required) - ID of tweet to reply to",
+  "content": "string (required) - Reply text"
+}
+```
+
+### 14. listTwitterTweets
+
+**Purpose:** List authenticated user's recent tweets
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "maxResults": "number (optional) - Max tweets to retrieve (default: 10)"
+}
+```
+
+### 15. searchTwitter
+
+**Purpose:** Search for tweets matching a query
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "query": "string (required) - Search query",
+  "maxResults": "number (optional) - Max results (default: 10)"
+}
+```
+
+### 16. likeTweet
+
+**Purpose:** Like a tweet on Twitter/X
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "tweetId": "string (required) - ID of tweet to like"
+}
+```
+
+### 17. retweetTweet
+
+**Purpose:** Retweet a tweet
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "tweetId": "string (required) - ID of tweet to retweet"
+}
+```
+
+### 18. getTweetEngagement
+
+**Purpose:** Get engagement metrics for a tweet
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "tweetId": "string (required) - ID of tweet"
+}
+```
+
+### 19. deleteTweet
+
+**Purpose:** Delete a tweet owned by authenticated user
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "tweetId": "string (required) - ID of tweet to delete"
+}
+```
+
+### 20. getUserMentions
+
+**Purpose:** Get tweets mentioning the authenticated user
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "maxResults": "number (optional) - Max mentions (default: 10)"
+}
+```
+
+---
+
+## 🔐 Facebook Authentication Tools
+
+### 21. getFacebookAuthUrl
+
+**Purpose:** Generate OAuth 2.0 authorization URL for Facebook authentication
+
+**Input Schema:**
+```json
+{
+  "callbackUrl": "string (required) - OAuth redirect URI",
+  "state": "string (optional) - CSRF protection token",
+  "scope": "string (optional) - Permissions scope"
+}
+```
+
+### 22. exchangeFacebookAuthCode
+
+**Purpose:** Exchange Facebook authorization code for access token
+
+**Input Schema:**
+```json
+{
+  "code": "string (required) - Authorization code from callback",
+  "callbackUrl": "string (required) - Same callback URL used in authorization"
+}
+```
+
+---
+
+## 📘 Facebook Tools
+
+### 23. postToFacebook
+
+**Purpose:** Create a new text-based post on Facebook
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
   "content": "string (required) - Post text content"
 }
 ```
@@ -238,23 +412,175 @@ curl -X POST http://localhost:3001/mcp/execute \
   -d '{
     "toolName": "postToFacebook",
     "params": {
+      "accessToken": "YOUR_ACCESS_TOKEN",
       "content": "Having a great day! #blessed"
     }
   }'
+```
+
+### 24. listFacebookPosts
+
+**Purpose:** List user's recent Facebook posts
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "maxResults": "number (optional) - Max posts (default: 5)"
+}
+```
+
+### 25. getFacebookPostLikes
+
+**Purpose:** Get likes for a specific Facebook post
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post"
+}
+```
+
+### 26. commentOnFacebookPost
+
+**Purpose:** Add a comment to a Facebook post
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post",
+  "comment": "string (required) - Comment text"
+}
+```
+
+### 27. getFacebookPostComments
+
+**Purpose:** Get comments for a Facebook post
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post"
+}
+```
+
+### 28. uploadFacebookPhoto
+
+**Purpose:** Upload a photo to Facebook with optional caption
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "imageUrl": "string (required) - URL of the image",
+  "caption": "string (optional) - Photo caption"
+}
+```
+
+### 29. likeFacebookPost
+
+**Purpose:** Like a post on Facebook
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post"
+}
+```
+
+### 30. shareFacebookLink
+
+**Purpose:** Share a link on Facebook with optional message
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "link": "string (required) - URL to share",
+  "message": "string (optional) - Message to accompany link"
+}
+```
+
+### 31. deleteFacebookPost
+
+**Purpose:** Delete a post owned by authenticated user
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post"
+}
+```
+
+### 32. getFacebookPageInfo
+
+**Purpose:** Get information about Facebook pages user manages
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token"
+}
+```
+
+### 33. getFacebookFriends
+
+**Purpose:** Get user's Facebook friends list (limited by privacy)
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token"
+}
+```
+
+---
+
+## 🔐 Instagram Authentication Tools
+
+### 34. getInstagramAuthUrl
+
+**Purpose:** Generate OAuth 2.0 authorization URL for Instagram authentication
+
+**Input Schema:**
+```json
+{
+  "callbackUrl": "string (required) - OAuth redirect URI",
+  "state": "string (optional) - CSRF protection token",
+  "scope": "string (optional) - Permissions scope"
+}
+```
+
+### 35. exchangeInstagramAuthCode
+
+**Purpose:** Exchange Instagram authorization code for access token
+
+**Input Schema:**
+```json
+{
+  "code": "string (required) - Authorization code from callback",
+  "callbackUrl": "string (required) - Same callback URL used in authorization"
+}
 ```
 
 ---
 
 ## 📸 Instagram Tools
 
-### 11. postToInstagram
+### 36. postToInstagram
 
-**Purpose:** Create a new post on Instagram
+**Purpose:** Create a new post on Instagram with image and caption
 
 **Input Schema:**
 ```json
 {
-  "imageUrl": "string (required) - URL of the image",
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "imageUrl": "string (required) - URL of the image (must be publicly accessible)",
   "caption": "string (required) - Post caption"
 }
 ```
@@ -266,17 +592,127 @@ curl -X POST http://localhost:3001/mcp/execute \
   -d '{
     "toolName": "postToInstagram",
     "params": {
+      "accessToken": "YOUR_ACCESS_TOKEN",
       "imageUrl": "https://example.com/image.jpg",
       "caption": "Beautiful sunset! #nature"
     }
   }'
 ```
 
+### 37. listInstagramPosts
+
+**Purpose:** List user's recent Instagram posts
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "maxResults": "number (optional) - Max posts (default: 5)"
+}
+```
+
+### 38. getInstagramPostLikes
+
+**Purpose:** Get likes count for an Instagram post
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post"
+}
+```
+
+### 39. commentOnInstagramPost
+
+**Purpose:** Add a comment to an Instagram post
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post",
+  "comment": "string (required) - Comment text"
+}
+```
+
+### 40. getInstagramPostComments
+
+**Purpose:** Get comments for an Instagram post
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post"
+}
+```
+
+### 41. getInstagramFollowers
+
+**Purpose:** Get user's Instagram followers count
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token"
+}
+```
+
+### 42. getInstagramFollowing
+
+**Purpose:** Get user's Instagram following count
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token"
+}
+```
+
+### 43. getInstagramPostInsights
+
+**Purpose:** Get insights (analytics) for an Instagram post (Business accounts)
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "postId": "string (required) - ID of the post"
+}
+```
+
+### 44. getInstagramAccountInsights
+
+**Purpose:** Get account insights (analytics) for user (Business accounts)
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "metric": "string (optional) - Metrics to retrieve",
+  "period": "string (optional) - Time period (day, week, days_28)"
+}
+```
+
+### 45. replyToInstagramComment
+
+**Purpose:** Reply to a comment on an Instagram post
+
+**Input Schema:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token",
+  "commentId": "string (required) - ID of comment to reply to",
+  "message": "string (required) - Reply text"
+}
+```
+
 ---
 
 ## 🤖 AI Tools (OpenAI GPT-4)
 
-### 12. generateCaption
+### 46. generateCaption
 
 **Purpose:** Generate creative social media captions using OpenAI GPT-4
 
@@ -319,7 +755,7 @@ The tool generates three caption variations:
 
 ---
 
-### 13. getSchedulingSuggestion
+### 47. getSchedulingSuggestion
 
 **Purpose:** Get AI-powered suggestions for optimal posting times
 
@@ -379,6 +815,47 @@ Resources are read-only data sources that can be fetched through the MCP protoco
 }
 ```
 
+### 2. getTwitterProfile
+
+**URI:** `mcpsocial:///getTwitterProfile`
+
+**Purpose:** Retrieve user's Twitter profile information
+
+**Parameters:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token"
+}
+```
+
+### 3. getFacebookProfile
+
+**URI:** `mcpsocial:///getFacebookProfile`
+
+**Purpose:** Retrieve user's Facebook profile information
+
+**Parameters:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token"
+}
+```
+
+### 4. getInstagramProfile
+
+**URI:** `mcpsocial:///getInstagramProfile`
+
+**Purpose:** Retrieve user's Instagram profile information
+
+**Parameters:**
+```json
+{
+  "accessToken": "string (required) - OAuth 2.0 access token"
+}
+```
+
+### Resource Access Example
+
 **Access via MCP v1:**
 ```bash
 curl -X POST http://localhost:3001/mcp/v1 \
@@ -395,27 +872,6 @@ curl -X POST http://localhost:3001/mcp/v1 \
     }
   }'
 ```
-
----
-
-### 2. getFacebookPageInfo
-
-**URI:** `mcpsocial:///getFacebookPageInfo`
-
-**Purpose:** Retrieve Facebook page information
-
-**Access via GET:**
-```bash
-curl http://localhost:3001/mcp/resources
-```
-
----
-
-### 3. getInstagramProfile
-
-**URI:** `mcpsocial:///getInstagramProfile`
-
-**Purpose:** Retrieve user's Instagram profile information
 
 ---
 
@@ -653,19 +1109,53 @@ await postToLinkedIn(token, captions.professional);
 
 | # | Tool Name | Category | Requires Auth | Description |
 |---|-----------|----------|---------------|-------------|
-| 1 | getLinkedInAuthUrl | Auth | No | Generate OAuth URL |
-| 2 | exchangeLinkedInAuthCode | Auth | No | Token exchange instructions |
-| 3 | postToLinkedIn | LinkedIn | Yes | Create post |
-| 4 | listLinkedInPosts | LinkedIn | Yes | List posts |
-| 5 | getLinkedInPostLikes | LinkedIn | Yes | Get post likes |
-| 6 | commentOnLinkedInPost | LinkedIn | Yes | Add comment |
-| 7 | getLinkedInPostComments | LinkedIn | Yes | Get comments |
-| 8 | shareLinkedInArticle | LinkedIn | Yes | Share article |
-| 9 | listLinkedInConnections | LinkedIn | Yes | List connections |
-| 10 | postToFacebook | Facebook | Yes | Create post |
-| 11 | postToInstagram | Instagram | Yes | Create post with image |
-| 12 | generateCaption | AI | No | Generate captions (OpenAI) |
-| 13 | getSchedulingSuggestion | AI | No | Get posting time suggestions |
+| 1 | getLinkedInAuthUrl | Auth | No | Generate LinkedIn OAuth URL |
+| 2 | exchangeLinkedInAuthCode | Auth | No | Exchange LinkedIn auth code |
+| 3 | postToLinkedIn | LinkedIn | Yes | Create LinkedIn post |
+| 4 | listLinkedInPosts | LinkedIn | Yes | List LinkedIn posts |
+| 5 | getLinkedInPostLikes | LinkedIn | Yes | Get LinkedIn post likes |
+| 6 | commentOnLinkedInPost | LinkedIn | Yes | Add LinkedIn comment |
+| 7 | getLinkedInPostComments | LinkedIn | Yes | Get LinkedIn comments |
+| 8 | shareLinkedInArticle | LinkedIn | Yes | Share LinkedIn article |
+| 9 | listLinkedInConnections | LinkedIn | Yes | List LinkedIn connections |
+| 10 | getTwitterAuthUrl | Auth | No | Generate Twitter OAuth URL |
+| 11 | exchangeTwitterAuthCode | Auth | No | Exchange Twitter auth code |
+| 12 | postToTwitter | Twitter | Yes | Create tweet |
+| 13 | replyToTweet | Twitter | Yes | Reply to tweet |
+| 14 | listTwitterTweets | Twitter | Yes | List user tweets |
+| 15 | searchTwitter | Twitter | Yes | Search tweets |
+| 16 | likeTweet | Twitter | Yes | Like tweet |
+| 17 | retweetTweet | Twitter | Yes | Retweet tweet |
+| 18 | getTweetEngagement | Twitter | Yes | Get tweet metrics |
+| 19 | deleteTweet | Twitter | Yes | Delete tweet |
+| 20 | getUserMentions | Twitter | Yes | Get user mentions |
+| 21 | getFacebookAuthUrl | Auth | No | Generate Facebook OAuth URL |
+| 22 | exchangeFacebookAuthCode | Auth | No | Exchange Facebook auth code |
+| 23 | postToFacebook | Facebook | Yes | Create Facebook post |
+| 24 | listFacebookPosts | Facebook | Yes | List Facebook posts |
+| 25 | getFacebookPostLikes | Facebook | Yes | Get Facebook post likes |
+| 26 | commentOnFacebookPost | Facebook | Yes | Add Facebook comment |
+| 27 | getFacebookPostComments | Facebook | Yes | Get Facebook comments |
+| 28 | uploadFacebookPhoto | Facebook | Yes | Upload Facebook photo |
+| 29 | likeFacebookPost | Facebook | Yes | Like Facebook post |
+| 30 | shareFacebookLink | Facebook | Yes | Share Facebook link |
+| 31 | deleteFacebookPost | Facebook | Yes | Delete Facebook post |
+| 32 | getFacebookPageInfo | Facebook | Yes | Get Facebook page info |
+| 33 | getFacebookFriends | Facebook | Yes | Get Facebook friends |
+| 34 | getInstagramAuthUrl | Auth | No | Generate Instagram OAuth URL |
+| 35 | exchangeInstagramAuthCode | Auth | No | Exchange Instagram auth code |
+| 36 | postToInstagram | Instagram | Yes | Create Instagram post |
+| 37 | listInstagramPosts | Instagram | Yes | List Instagram posts |
+| 38 | getInstagramPostLikes | Instagram | Yes | Get Instagram post likes |
+| 39 | commentOnInstagramPost | Instagram | Yes | Add Instagram comment |
+| 40 | getInstagramPostComments | Instagram | Yes | Get Instagram comments |
+| 41 | getInstagramFollowers | Instagram | Yes | Get Instagram followers |
+| 42 | getInstagramFollowing | Instagram | Yes | Get Instagram following |
+| 43 | getInstagramPostInsights | Instagram | Yes | Get Instagram post insights |
+| 44 | getInstagramAccountInsights | Instagram | Yes | Get Instagram account insights |
+| 45 | replyToInstagramComment | Instagram | Yes | Reply to Instagram comment |
+| 46 | generateCaption | AI | No | Generate captions (OpenAI) |
+| 47 | getSchedulingSuggestion | AI | No | Get posting time suggestions |
 
 ---
 
@@ -689,6 +1179,17 @@ For questions or issues:
 
 ---
 
-**Last Updated:** November 17, 2025  
+**Last Updated:** December 15, 2025  
 **Server Version:** 1.0.0  
 **MCP Protocol Version:** 1.0
+
+---
+
+## 📚 Additional Documentation
+
+For detailed integration guides, see:
+- [LinkedIn OAuth Guide](./LINKEDIN_OAUTH_GUIDE.md)
+- [Twitter Integration Summary](./TWITTER_INTEGRATION_SUMMARY.md)
+- [Twitter OAuth Test Guide](./TWITTER_OAUTH_TEST_GUIDE.md)
+- [Facebook Integration Guide](./FACEBOOK_INTEGRATION_GUIDE.md)
+- [Instagram Integration Guide](./INSTAGRAM_INTEGRATION_GUIDE.md)

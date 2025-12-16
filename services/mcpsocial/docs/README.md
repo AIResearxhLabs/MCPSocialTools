@@ -114,58 +114,39 @@ curl -X POST ${MCPSOCIAL_ENDPOINT}/mcp/v1/ \
 
 ## 4. Available Tools and Resources
 
-The following tools and resources are available through the MCP host:
+The MCPSocial server provides **47 tools + 5 resources** across multiple platforms:
 
-### LinkedIn
+| Platform | Auth Tools | Functional Tools | Resources | Total Features |
+|----------|-----------|------------------|-----------|----------------|
+| **LinkedIn** | 2 | 7 | 1 | 10 |
+| **Twitter/X** | 3 | 9 | 1 | 13 |
+| **Facebook** | 2 | 11 | 1 | 14 |
+| **Instagram** | 2 | 10 | 1 | 13 |
+| **AI (OpenAI)** | 0 | 2 | 0 | 2 |
+| **TOTAL** | **9** | **39** | **5** | **53** |
 
-**Tools:**
+### Quick Tool Reference
 
-*   **`postToLinkedIn`**: Creates a new text-based post on LinkedIn.
-    *   **Input Schema:**
-        *   `accessToken` (string, required): The OAuth 2.0 access token for the user's LinkedIn account.
-        *   `content` (string, required): The text content of the post.
+**Authentication:**
+- OAuth 2.0 flows for LinkedIn, Twitter, Facebook, Instagram
+- Token exchange and refresh capabilities
+- PKCE support for Twitter
 
-**Resources:**
+**Content Management:**
+- Create, list, and delete posts
+- Upload photos and share links
+- Comment and engage with content
 
-*   **`getLinkedInProfile`**: Retrieves the user's LinkedIn profile information.
-    *   **Parameters:**
-        *   `accessToken` (string, required): The OAuth 2.0 access token for the user's LinkedIn account.
+**Analytics:**
+- Post engagement metrics
+- Account insights (Business accounts)
+- Follower/following counts
 
-### Facebook
+**AI Features:**
+- AI-powered caption generation
+- Optimal posting time suggestions
 
-**Tools:**
-
-*   **`postToFacebook`**: Creates a new post on Facebook.
-    *   **Input Schema:**
-        *   `content` (string, required): The text content of the post.
-
-**Resources:**
-
-*   **`getFacebookPageInfo`**: Retrieves information about the Facebook page.
-
-### Instagram
-
-**Tools:**
-
-*   **`postToInstagram`**: Creates a new post on Instagram.
-    *   **Input Schema:**
-        *   `imageUrl` (string, required): The URL of the image to post.
-        *   `caption` (string, required): The caption for the post.
-
-**Resources:**
-
-*   **`getInstagramProfile`**: Retrieves the user's Instagram profile information.
-
-### Gemini
-
-**Tools:**
-
-*   **`generateCaption`**: Generates a post caption using the Gemini API.
-    *   **Input Schema:**
-        *   `prompt` (string, required): The prompt to use for generating the caption.
-*   **`getSchedulingSuggestion`**: Suggests the best time to post on social media for maximum engagement.
-    *   **Input Schema:**
-        *   `postContent` (string, required): The content of the post to be scheduled.
+**📚 Complete tool reference**: See [MCP_TOOLS_REFERENCE.md](./MCP_TOOLS_REFERENCE.md) for detailed documentation of all 47 tools
 
 ## 5. MCP Protocol Methods
 
@@ -312,25 +293,60 @@ curl -X POST http://3.141.18.225:3001/api/linkedin/posts \
 
 ## 9. Documentation
 
+### Core Documentation
+
 | Document | Description |
 |----------|-------------|
 | [MCP_PROTOCOL.md](./MCP_PROTOCOL.md) | Complete MCP protocol specification |
 | [API_REFERENCE.md](./API_REFERENCE.md) | Full API endpoint reference |
+| [MCP_TOOLS_REFERENCE.md](./MCP_TOOLS_REFERENCE.md) | Complete tools & resources reference (47 tools) |
 | [MCP_INTEGRATION_GUIDE.md](./MCP_INTEGRATION_GUIDE.md) | AI agent integration guide |
 | [FUNCTIONAL_SPECIFICATION.md](./FUNCTIONAL_SPECIFICATION.md) | Functional specification |
 | [PRODUCT_REQUIREMENTS.md](./PRODUCT_REQUIREMENTS.md) | Product requirements |
 
-## 10. LinkedIn OAuth Configuration
+### Platform Integration Guides
 
-The LinkedIn integration uses OAuth 2.0 with the following scope:
-- `openid profile w_member_social`
+| Document | Description |
+|----------|-------------|
+| [LINKEDIN_OAUTH_GUIDE.md](./LINKEDIN_OAUTH_GUIDE.md) | LinkedIn OAuth setup and authentication |
+| [TWITTER_INTEGRATION_SUMMARY.md](./TWITTER_INTEGRATION_SUMMARY.md) | Twitter integration overview |
+| [TWITTER_OAUTH_TEST_GUIDE.md](./TWITTER_OAUTH_TEST_GUIDE.md) | Twitter OAuth testing guide |
+| [TWITTER_TOKEN_REFRESH_GUIDE.md](./TWITTER_TOKEN_REFRESH_GUIDE.md) | Twitter token refresh and troubleshooting |
+| [FACEBOOK_INTEGRATION_GUIDE.md](./FACEBOOK_INTEGRATION_GUIDE.md) | Facebook OAuth, API, and best practices |
+| [INSTAGRAM_INTEGRATION_GUIDE.md](./INSTAGRAM_INTEGRATION_GUIDE.md) | Instagram OAuth, API, and analytics |
 
-This scope allows:
-- ✅ Reading user profile information
-- ✅ Creating posts on behalf of the user
-- ✅ Accessing connection data
+### Deployment Documentation
 
-**Note**: LinkedIn OAuth flow is fully implemented and working. All LinkedIn endpoints remain unchanged and functional.
+| Document | Description |
+|----------|-------------|
+| [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) | AWS deployment instructions |
+| [SERVER_ENDPOINT.md](./SERVER_ENDPOINT.md) | Endpoint management and ALB setup |
+
+## 10. OAuth Configuration
+
+### LinkedIn
+- **Scope:** `openid profile w_member_social`
+- **Flow:** OAuth 2.0
+- **Token Refresh:** Not yet implemented
+
+### Twitter/X
+- **Scope:** `tweet.read tweet.write users.read offline.access`
+- **Flow:** OAuth 2.0 with PKCE
+- **Token Refresh:** ✅ Implemented via `refreshTwitterToken` tool
+- **Token Expiry:** 2 hours (proactive refresh recommended)
+
+### Facebook
+- **Scope:** `public_profile email pages_manage_posts pages_read_engagement`
+- **Flow:** OAuth 2.0
+- **API Version:** Graph API v19.0
+
+### Instagram
+- **Scope:** `user_profile user_media`
+- **Flow:** OAuth 2.0 (via Facebook App)
+- **Requirements:** Business or Creator account
+- **Analytics:** Available for Business accounts
+
+**📚 Detailed OAuth guides available for each platform in the documentation section above**
 
 ## 11. Architecture Highlights
 

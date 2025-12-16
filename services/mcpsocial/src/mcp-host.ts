@@ -590,8 +590,90 @@ export class McpSocialHost {
       },
     };
 
+    // Tool: Refresh Twitter access token
+    const refreshTwitterTokenTool: McpTool = {
+      name: 'refreshTwitterToken',
+      description: 'Refreshes an expired Twitter access token using a refresh token. This allows you to obtain a new access token without requiring the user to re-authenticate. The refresh token is obtained during the initial OAuth flow when offline.access scope is included.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          refreshToken: {
+            type: 'string',
+            description: 'The refresh token obtained during initial authentication',
+          },
+        },
+        required: ['refreshToken'],
+      },
+      execute: async (params: { refreshToken: string }) => {
+        const getTimer = logger.startTimer();
+        
+        try {
+          logger.info('Twitter Token Refresh Started', undefined, { 
+            refreshToken: params.refreshToken.substring(0, 10) + '...'
+          });
+          
+          const tokenResponse = await axios.post(
+            'https://api.twitter.com/2/oauth2/token',
+            qs.stringify({
+              grant_type: 'refresh_token',
+              refresh_token: params.refreshToken,
+            }),
+            {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Basic ${Buffer.from(`${twitterConfig.clientId}:${twitterConfig.clientSecret}`).toString('base64')}`,
+              },
+            }
+          );
+
+          const { access_token, expires_in, refresh_token, scope, token_type } = tokenResponse.data;
+          const duration = getTimer();
+          
+          logger.info('Twitter Token Refresh Successful', { duration }, { 
+            expiresIn: expires_in, 
+            hasNewRefreshToken: !!refresh_token,
+            scope,
+            tokenType: token_type
+          });
+
+          return {
+            success: true,
+            message: 'Successfully refreshed Twitter access token! Use the new access_token with Twitter tools.',
+            accessToken: access_token,
+            tokenType: token_type,
+            expiresIn: expires_in,
+            refreshToken: refresh_token || params.refreshToken, // Twitter may issue a new refresh token
+            scope: scope,
+            note: 'Store the new accessToken and refreshToken securely. The old access token is now invalid.',
+          };
+        } catch (error) {
+          const duration = getTimer();
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+          
+          logger.error('Twitter Token Refresh Failed', { duration }, { 
+            error: errorMsg,
+            refreshToken: params.refreshToken.substring(0, 10) + '...'
+          });
+          
+          if (axios.isAxiosError(error) && error.response) {
+            const statusCode = error.response.status;
+            const errorData = error.response.data;
+            
+            if (statusCode === 400) {
+              throw new Error(`Twitter Token Refresh Error: ${errorData.error_description || 'Invalid refresh token. You may need to re-authenticate.'}`);
+            } else if (statusCode === 401) {
+              throw new Error('Twitter Token Refresh Error: Invalid client credentials or refresh token has been revoked. Re-authentication required.');
+            }
+          }
+          
+          throw new Error(`Failed to refresh access token: ${errorMsg}. You may need to re-authenticate.`);
+        }
+      },
+    };
+
     this.tools.set(getTwitterAuthUrlTool.name, getTwitterAuthUrlTool);
     this.tools.set(exchangeTwitterAuthCodeTool.name, exchangeTwitterAuthCodeTool);
+    this.tools.set(refreshTwitterTokenTool.name, refreshTwitterTokenTool);
   }
 
   /**

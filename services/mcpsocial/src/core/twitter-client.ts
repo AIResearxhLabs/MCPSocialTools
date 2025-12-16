@@ -89,18 +89,33 @@ export class TwitterClient {
       };
     } catch (error) {
       const duration = getTimer();
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      let errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      let statusCode: number | undefined;
       
-      logger.logApiResponse('Twitter', endpoint, undefined, undefined, errorMsg, duration);
-      
+      // Enhanced error logging with detailed API response
       if (axios.isAxiosError(error) && error.response) {
-        const statusCode = error.response.status;
-        if (statusCode === 403) {
-          throw new Error('Tweet creation forbidden. Check if your app has write permissions and the user has authorized them.');
+        statusCode = error.response.status;
+        const errorData = error.response.data;
+        
+        // Log the full error response for debugging
+        logger.error('Twitter API Error Details', { endpoint, duration }, { 
+          statusCode,
+          errorData,
+          errorMessage: errorMsg 
+        });
+        
+        if (statusCode === 401) {
+          throw new Error('Tweet creation unauthorized. Your access token is invalid or expired. Use refreshTwitterToken to get a new token, or re-authenticate.');
+        } else if (statusCode === 403) {
+          throw new Error('Tweet creation forbidden. Check if your app has write permissions (tweet.write scope) and the user has authorized them.');
         } else if (statusCode === 429) {
           throw new Error('Rate limit exceeded. Please wait before creating more tweets.');
+        } else if (errorData && errorData.detail) {
+          throw new Error(`Twitter API Error: ${errorData.detail}`);
         }
       }
+      
+      logger.logApiResponse('Twitter', endpoint, statusCode, undefined, errorMsg, duration);
       
       throw new Error('Could not create tweet on Twitter.');
     }
@@ -410,6 +425,16 @@ export class TwitterClient {
       
       throw new Error('Could not retrieve user mentions.');
     }
+  }
+
+  /**
+   * Updates the access token for this client instance.
+   * Useful after refreshing an expired token.
+   * @param newAccessToken - The new access token.
+   */
+  updateAccessToken(newAccessToken: string): void {
+    this.accessToken = newAccessToken;
+    this.apiClient.defaults.headers['Authorization'] = `Bearer ${newAccessToken}`;
   }
 }
 

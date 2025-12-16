@@ -96,8 +96,26 @@ const linkedinAuthMiddleware = (req: Request, res: Response, next: NextFunction)
   next();
 };
 
-const facebookClient = new FacebookClient();
-const instagramClient = new InstagramClient();
+// Middleware to create a Facebook client for each request
+const facebookAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Authorization token is required' });
+  }
+  res.locals.facebookClient = new FacebookClient(accessToken);
+  next();
+};
+
+// Middleware to create an Instagram client for each request
+const instagramAuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Authorization token is required' });
+  }
+  res.locals.instagramClient = new InstagramClient(accessToken);
+  next();
+};
+
 const openaiClient = new OpenAIClient();
 
 // LinkedIn Auth Routes
@@ -226,82 +244,86 @@ router.get('/linkedin/connections', async (req: Request, res: Response) => {
   res.json(connections);
 });
 
-// Facebook Routes
-router.post('/facebook/posts', async (req, res) => {
+// Facebook Routes (all protected by the authentication middleware)
+router.use('/facebook', facebookAuthMiddleware);
+
+router.post('/facebook/posts', async (req: Request, res: Response) => {
     const { content } = req.body;
-    const post = await facebookClient.createPost(content);
+    const post = await res.locals.facebookClient.createPost(content);
     res.json(post);
 });
-router.get('/facebook/posts', async (req, res) => {
-    const posts = await facebookClient.listLast5Posts();
+router.get('/facebook/posts', async (req: Request, res: Response) => {
+    const posts = await res.locals.facebookClient.listLast5Posts();
     res.json(posts);
 });
-router.get('/facebook/posts/:id/likes', async (req, res) => {
+router.get('/facebook/posts/:id/likes', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const likes = await facebookClient.getLikesForPost(id);
+    const likes = await res.locals.facebookClient.getLikesForPost(id);
     res.json(likes);
 });
-router.post('/facebook/posts/:id/comments', async (req, res) => {
+router.post('/facebook/posts/:id/comments', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { comment } = req.body;
-    const newComment = await facebookClient.commentOnPost(id, comment);
+    const newComment = await res.locals.facebookClient.commentOnPost(id, comment);
     res.json(newComment);
 });
-router.get('/facebook/posts/:id/comments', async (req, res) => {
+router.get('/facebook/posts/:id/comments', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const comments = await facebookClient.getPostComments(id);
+    const comments = await res.locals.facebookClient.getPostComments(id);
     res.json(comments);
 });
-router.post('/facebook/photos', async (req, res) => {
+router.post('/facebook/photos', async (req: Request, res: Response) => {
     const { imageUrl, caption } = req.body;
-    const photo = await facebookClient.uploadPhoto(imageUrl, caption);
+    const photo = await res.locals.facebookClient.uploadPhoto(imageUrl, caption);
     res.json(photo);
 });
-router.get('/facebook/page', async (req, res) => {
-    const pageInfo = await facebookClient.getPageInfo();
+router.get('/facebook/page', async (req: Request, res: Response) => {
+    const pageInfo = await res.locals.facebookClient.getPageInfo();
     res.json(pageInfo);
 });
-router.get('/facebook/friends', async (req, res) => {
-    const friends = await facebookClient.getUserFriends();
+router.get('/facebook/friends', async (req: Request, res: Response) => {
+    const friends = await res.locals.facebookClient.getUserFriends();
     res.json(friends);
 });
 
-// Instagram Routes
-router.post('/instagram/posts', async (req, res) => {
+// Instagram Routes (all protected by the authentication middleware)
+router.use('/instagram', instagramAuthMiddleware);
+
+router.post('/instagram/posts', async (req: Request, res: Response) => {
     const { imageUrl, caption } = req.body;
-    const post = await instagramClient.createPost(imageUrl, caption);
+    const post = await res.locals.instagramClient.createPost(imageUrl, caption);
     res.json(post);
 });
-router.get('/instagram/posts', async (req, res) => {
-    const posts = await instagramClient.listLast5Posts();
+router.get('/instagram/posts', async (req: Request, res: Response) => {
+    const posts = await res.locals.instagramClient.listLast5Posts();
     res.json(posts);
 });
-router.get('/instagram/posts/:id/likes', async (req, res) => {
+router.get('/instagram/posts/:id/likes', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const likes = await instagramClient.getLikesForPost(id);
+    const likes = await res.locals.instagramClient.getLikesForPost(id);
     res.json(likes);
 });
-router.post('/instagram/posts/:id/comments', async (req, res) => {
+router.post('/instagram/posts/:id/comments', async (req: Request, res: Response) => {
     const { id } = req.params;
     const { comment } = req.body;
-    const newComment = await instagramClient.commentOnPost(id, comment);
+    const newComment = await res.locals.instagramClient.commentOnPost(id, comment);
     res.json(newComment);
 });
-router.get('/instagram/posts/:id/comments', async (req, res) => {
+router.get('/instagram/posts/:id/comments', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const comments = await instagramClient.getPostComments(id);
+    const comments = await res.locals.instagramClient.getPostComments(id);
     res.json(comments);
 });
-router.get('/instagram/profile', async (req, res) => {
-    const profile = await instagramClient.getUserProfile();
+router.get('/instagram/profile', async (req: Request, res: Response) => {
+    const profile = await res.locals.instagramClient.getUserProfile();
     res.json(profile);
 });
-router.get('/instagram/followers', async (req, res) => {
-    const followers = await instagramClient.getFollowers();
+router.get('/instagram/followers', async (req: Request, res: Response) => {
+    const followers = await res.locals.instagramClient.getFollowers();
     res.json(followers);
 });
-router.get('/instagram/following', async (req, res) => {
-    const following = await instagramClient.getFollowing();
+router.get('/instagram/following', async (req: Request, res: Response) => {
+    const following = await res.locals.instagramClient.getFollowing();
     res.json(following);
 });
 
